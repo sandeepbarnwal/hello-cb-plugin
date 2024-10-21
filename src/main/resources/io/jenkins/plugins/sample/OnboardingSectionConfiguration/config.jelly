@@ -17,6 +17,12 @@
         <f:entry title="Password">
             <f:password field="password" />
         </f:entry>
+        <f:validateButton
+                title="${%Test Connection}" progress="${%Testing...}"
+                method="testConnection" with="username,password,url" />
+        <f:validateButton
+                title="${%Test Payload}" progress="${%Testing...}"
+                method="testPayload" with="username,password,url" />
     </f:advanced>
 </f:section>
 </j:jelly>

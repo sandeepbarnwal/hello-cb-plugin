@@ -118,5 +118,57 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
         }
         return FormValidation.ok("All good!");
     }
+
+    @POST
+    public FormValidation doTestConnection(@QueryParameter("username") final String username,
+                                           @QueryParameter("password") final String password,
+                                           @QueryParameter("url") String url,
+                                           @AncestorInPath Job job) {
+        if (url.isEmpty()) {
+            return FormValidation.error("URL cannot be empty");
+        } else if (!url.startsWith("http")) {
+            return FormValidation.error("Enter URL in correct format");
+        }
+        if (username.isEmpty() || password.isEmpty()) {
+            return FormValidation.error("Enter username and password.");
+        }
+        try {
+            if (job == null) {
+                Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            } else {
+                job.checkPermission(Item.CONFIGURE);
+            }
+
+            return invokeRestApiPost(url, null);
+        } catch (Exception e) {
+            return FormValidation.error("Client error : "+ e.getMessage());
+        }
+    }
+
+    private static FormValidation invokeRestApiPost(String url, String authHeader) {
+        return invokeRestApiPost(url, authHeader, null);
+    }
+    private static FormValidation invokeRestApiPost(String url, String authHeader, String payload) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(Objects.isNull(payload) || payload.isBlank() ? HttpRequest.BodyPublishers.noBody()
+                            : HttpRequest.BodyPublishers.ofString(payload));
+            if (authHeader != null) {
+                requestBuilder.header("Authorization", authHeader);
+            }
+            HttpRequest request = requestBuilder.build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200)
+                return FormValidation.ok("Success");
+            else
+                return FormValidation.warning(String.valueOf(response.statusCode()));
+        } catch (Exception e) {
+            return FormValidation.error("Client error : "+ e.getMessage());
+        }
+    }
+
 }
 
