@@ -1,11 +1,20 @@
 package io.jenkins.plugins.sample;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.Extension;
 import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.Job;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -170,5 +179,54 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
         }
     }
 
+    @POST
+    public FormValidation doTestPayload(@QueryParameter("username") final String username,
+                                        @QueryParameter("password") final String password,
+                                        @QueryParameter("url") String url, @QueryParameter String secretId,
+                                        @AncestorInPath Job job) {
+        if (url.isEmpty()) {
+            return FormValidation.error("URL cannot be empty");
+        } else if (!url.startsWith("http")) {
+            return FormValidation.error("Enter URL in correct format");
+        }
+        if (username.isEmpty() || password.isEmpty()) {
+            return FormValidation.error("Enter username and password.");
+        }
+        try {
+            if (job == null) {
+                Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            } else {
+                job.checkPermission(Item.CONFIGURE);
+            }
+            String payload = "";
+            DomainRequirement domainRequirement = new DomainRequirement();
+            List<StringCredentialsImpl> credentials =
+                    CredentialsProvider.lookupCredentials(StringCredentialsImpl.class, (ItemGroup) null, ACL.SYSTEM, domainRequirement);
+            Optional<StringCredentials> optStandardCredentials = credentials.stream().filter(standardCredentials ->
+                            standardCredentials.getId().matches(secretId))
+                    .map(standardCredentials -> (StringCredentials) standardCredentials)
+                    .findFirst();
+            return invokeRestApiPost(url, getBasicAuthHeader(username, password), optStandardCredentials
+                    .map(stringCredentials -> stringCredentials.getSecret().getPlainText()).orElse(""));
+        } catch (Exception e) {
+            return FormValidation.error("Client error : "+ e.getMessage());
+        }
+    }
+
+    private String getBasicAuthHeader(String username, String password) {
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+        return "Basic " + encodedAuth;
+    }
+
+    @POST
+    public ListBoxModel doFillSecretIdItems() {
+        StandardListBoxModel result = new StandardListBoxModel();
+        DomainRequirement domainRequirement = new DomainRequirement();
+        List<StringCredentialsImpl> credentials =
+                CredentialsProvider.lookupCredentials(StringCredentialsImpl.class, (ItemGroup) null, ACL.SYSTEM, domainRequirement);
+            credentials.forEach(c -> result.add(c.getId(), c.getId()));
+        return result;
+    }
 }
 
