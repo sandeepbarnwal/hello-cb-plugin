@@ -27,5 +27,6 @@
                 title="${%Test Payload}" progress="${%Testing Payload...}"
                 method="testPayload" with="username,password,url,secretId" />
     </f:advanced>
+    <f:property field="categoryConfig"/>
 </f:section>
 </j:jelly>

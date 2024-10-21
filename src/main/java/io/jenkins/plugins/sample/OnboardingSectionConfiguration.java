@@ -39,6 +39,7 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
 
     private String password;
 
+    private CategoryConfig categoryConfig;
 
     public OnboardingSectionConfiguration() {
         load();
@@ -87,6 +88,14 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public CategoryConfig getCategoryConfig() {
+        return categoryConfig;
+    }
+
+    public void setCategoryConfig(CategoryConfig categoryConfig) {
+        this.categoryConfig = categoryConfig;
     }
 
     public FormValidation doCheckName(@QueryParameter String value) {
