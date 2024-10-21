@@ -1,17 +1,11 @@
 package io.jenkins.plugins.sample;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.Extension;
 import hudson.model.Item;
-import hudson.model.ItemGroup;
 import hudson.model.Job;
-import hudson.security.ACL;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -30,17 +24,52 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
 
     private String description;
 
-    public String getName() {
-        return name;
-    }
+    private String url;
+
+    private String username;
+
+    private String password;
+
 
     public OnboardingSectionConfiguration() {
         load();
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+        save();
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        save();
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        save();
+        this.password = password;
+    }
+
     public void setName(String name) {
         this.name = name;
-        save();
+//        if (validateName(name))
+//            save();
     }
 
     public String getDescription() {
@@ -49,6 +78,45 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
 
     public void setDescription(String description) {
         this.description = description;
-        save();
+    }
+
+    public FormValidation doCheckName(@QueryParameter String value) {
+        if(Objects.isNull(value) || value.isBlank()) {
+            return FormValidation.warning("Name is empty");
+        } else {
+            if (!validateName(value)) {
+                return FormValidation.warning("Invalid name data");
+            }
+        }
+        return FormValidation.ok("All good!");
+    }
+
+    private boolean validateName(String name) {
+        Pattern pattern = Pattern.compile("^[A-Za-z\\- ]+$");
+        if (!pattern.matcher(name).matches()) {
+            return false;
+        }
+        return true;
+    }
+
+    public FormValidation doCheckUsername(@QueryParameter String value) {
+        if(Objects.isNull(value) || value.isBlank()) {
+            return FormValidation.warning("Username is empty");
+        } else {
+            Pattern pattern = Pattern.compile("^[A-Za-z]+$");
+            if (!pattern.matcher(value).matches()) {
+                return FormValidation.warning("Invalid Username Input");
+            }
+        }
+        return FormValidation.ok("All good!");
+    }
+
+    public FormValidation doCheckPassword(@QueryParameter String value) {
+        if(Objects.isNull(value) || value.isBlank()) {
+            return FormValidation.warning("Password is empty");
+        } else {
+        }
+        return FormValidation.ok("All good!");
     }
 }
+
