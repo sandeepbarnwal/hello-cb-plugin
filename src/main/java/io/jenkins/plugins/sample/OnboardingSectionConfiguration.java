@@ -63,7 +63,7 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
     }
 
     public void setUsername(String username) {
-        save();
+        save(); //This is done on purpose. it save the data without invoking save also.
         this.username = username;
     }
 
@@ -72,14 +72,14 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
     }
 
     public void setPassword(String password) {
-        save();
+        save(); //This is done on purpose. it save the data without invoking save also.
         this.password = password;
     }
 
     public void setName(String name) {
         this.name = name;
-//        if (validateName(name))
-//            save();
+        if (validateName(name))
+            save();   // TODO: it save the data without invoking save also. need to check the behavior to implement validation here.
     }
 
     public String getDescription() {
