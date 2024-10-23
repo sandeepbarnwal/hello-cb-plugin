@@ -1,0 +1,52 @@
+.idea
+*.iml
+target
+# hpi:run working directories
+work
+work-*
+.parcel-cache
+dist
+src/main/webapp/js
+node_modules
+*.styles.ts
+node
+npm-debug.log
+package-lock.json
+
+yarn-error.log
+/test-results/
+/playwright-reports/
+/playwright/.cache/
+playwright-*-results.xml
+
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# https://github.com/takari/maven-wrapper#usage-without-binary-jar
+.mvn/wrapper/maven-wrapper.jar
+# yarn2
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+#mockserver
+mockserver/dist
+mockserver-*.jar
+CertificateAuthorityCertificate.pem
+
+#openapi
+src/main/ts/generated
+.wireit
+
+# MacOS
+**/.DS_Store
