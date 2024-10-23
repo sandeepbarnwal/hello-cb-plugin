@@ -5,9 +5,10 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public final class CategoryEntry extends AbstractDescribableImpl<CategoryEntry> {
+public final class CategoryEntry extends AbstractDescribableImpl<CategoryEntry> implements Serializable {
 
     private final String name;
 
@@ -26,6 +27,11 @@ public final class CategoryEntry extends AbstractDescribableImpl<CategoryEntry> 
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public String toString() {
+        return  name;
     }
 
     @Extension

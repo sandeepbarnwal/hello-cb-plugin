@@ -52,12 +52,12 @@ public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
             Optional<CategoryEntry> categoryEntryOptional = onboardingSectionConfig.getCategoryConfig().getCategories()
                     .stream()
                     .filter(category -> category.getUuid().equals(selectedCategory)).findFirst();
-            listener.getLogger().println("I'm Onboarding task build step" + (categoryEntryOptional
-                    .map(categoryEntry -> "and I have selected " + categoryEntry.getName()).orElse("")));
+            listener.getLogger().println("I'm " + name + (categoryEntryOptional
+                    .map(categoryEntry -> " and I have selected " + categoryEntry.getName()).orElse("")));
         }
     }
 
-    @Symbol("onboarding task")
+    @Symbol("onboarding")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
