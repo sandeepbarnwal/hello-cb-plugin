@@ -1,0 +1,32 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
+<f:section title="Onboarding Section">
+    <f:entry title="Name" field="name">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Description" field="description">
+        <f:textarea />
+    </f:entry>
+    <f:advanced title="Connection Options">
+        <f:entry title="URL">
+            <f:textbox field="url" />
+        </f:entry>
+        <f:entry title="Username">
+            <f:textbox field="username" />
+        </f:entry>
+        <f:entry title="Password">
+            <f:password field="password" />
+        </f:entry>
+        <f:validateButton
+                title="${%Test Connection}" progress="${%Testing connection...}"
+                method="testConnection" with="username,password,url" />
+        <f:entry title="Secrets" field="secretId">
+            <f:select/>
+        </f:entry>
+        <f:validateButton
+                title="${%Test Payload}" progress="${%Testing Payload...}"
+                method="testPayload" with="username,password,url,secretId" />
+    </f:advanced>
+    <f:property field="categoryConfig"/>
+</f:section>
+</j:jelly>
