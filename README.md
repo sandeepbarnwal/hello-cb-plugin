@@ -21,6 +21,7 @@ pipeline {
         stage('Hello') {
             steps {
                 script {
+                    getBuildReferences(env.TOTAL_BUILD_REFERENCES_TO_KEEP)
                     greet('cloudbees')
 
                     // Step 1: Alternative of existing step's config.jelly
@@ -47,6 +48,23 @@ pipeline {
     }
 }
 
+
+def getBuildReferences(noOfBuilds) {
+    def currentReferences = []
+    if (fileExists(env.GLOBAL_FILE)) {
+        def jsonContent = readFile(env.GLOBAL_FILE)
+        currentReferences = readJSON(text: jsonContent)
+        while (currentReferences.size() > Integer.parseInt(noOfBuilds)) {
+            currentReferences.remove(0)
+        }
+        echo "Last ${noOfBuilds} references:"
+        currentReferences.each { reference ->
+            echo "Reference: ${reference.url}"
+        }
+    } else {
+        echo "No Existings build references to show"
+    }
+}
 
 def updateBuildReferences(buildNumber, category) {
     echo "updating build reference: ${buildNumber} - ${category}"
