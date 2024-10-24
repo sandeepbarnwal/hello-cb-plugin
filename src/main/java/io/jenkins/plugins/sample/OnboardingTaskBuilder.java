@@ -43,6 +43,10 @@ public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
          this.selectedCategory = category;
     }
 
+    public String getSelectedCategory() {
+        return selectedCategory;
+    }
+
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {

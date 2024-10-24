@@ -9,8 +9,14 @@ This project contains tasks from https://engineering.beescloud.com/docs/engineer
 1. Create a new pipeline and use below script under script section 
 
 ```groovy
+def categorySelected = ''
+
 pipeline {
     agent any
+    environment {
+        GLOBAL_FILE = 'build_references.json' // check path
+        TOTAL_BUILD_REFERENCES_TO_KEEP = 5
+    }
     stages {
         stage('Hello') {
             steps {
@@ -20,20 +26,63 @@ pipeline {
                     // Step 1: Alternative of existing step's config.jelly
                     def choicesMap = getCategoryChoicesMap()
                     def choices = choicesMap.collect { key, value -> key }.join('\n')
-                    def inputParams = input(
+                    categorySelected = input(
                             message: 'Select a category:',
                             parameters: [choice(choices: choices, name: 'Categories')]
                     )
-                    echo "You selected: ${inputParams}"
+                    echo "You selected: ${categorySelected}"
 
                     // Step 2: Create onboarding step object, set selected category and execute the step
-                    step([$class: 'OnboardingTaskBuilder', name: 'onboarding step 2', selectedCategory: choicesMap[inputParams]])
+                    step([$class: 'OnboardingTaskBuilder', name: 'onboarding step 2', selectedCategory: choicesMap[categorySelected]])
 
 
                 }
             }
         }
     }
+    post {
+        always {
+            updateBuildReferences(currentBuild.number, categorySelected)
+        }
+    }
+}
+
+
+def updateBuildReferences(buildNumber, category) {
+    echo "updating build reference: ${buildNumber} - ${category}"
+    def currentReferences = []
+    if (!fileExists(env.GLOBAL_FILE)) {
+        writeFile(file: env.GLOBAL_FILE, text: '[]')
+        echo "Created new file: ${env.GLOBAL_FILE}"
+    }
+
+    def jsonContent = readFile(env.GLOBAL_FILE)
+    echo "Current references - ${jsonContent}"
+
+    //def jsonSlurper = new groovy.json.JsonSlurper()
+    //currentReferences = jsonSlurper.parseText(jsonContent)
+    currentReferences = readJSON(text: jsonContent)
+
+    def newReference = [
+            buildNumber: buildNumber,
+            url: env.BUILD_URL,
+            category: category,
+            timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    ]
+
+    currentReferences.add(newReference)
+
+    while (currentReferences.size() > Integer.parseInt(env.TOTAL_BUILD_REFERENCES_TO_KEEP)) {
+        currentReferences.remove(0)
+    }
+
+    //def jsonOutput = JsonOutput.toJson(currentReferences)
+    //writeFile(file: env.GLOBAL_FILE, text: JsonOutput.prettyPrint(jsonOutput))
+    //echo "Updated build references: ${JsonOutput.prettyPrint(jsonOutput)}"
+
+    def jsonOutput = writeJSON(returnText: true, json: currentReferences)
+    writeFile(file: env.GLOBAL_FILE, text: jsonOutput)
+    echo "Updated build references: ${jsonOutput}"
 }
 
 def getCategoryChoicesMap() {
@@ -47,20 +96,16 @@ def getCategoryChoicesMap() {
             choicesMap[category.name] = category.uuid
         }
     } else {
-        echo "Onboarding configuration not found."
+        echo "Onboarding configuration doesn't exist."
     }
     return choicesMap
 }
+```
+2. Install pipeline-utility-steps
+3. Approve method invocations from http://localhost:8080/jenkins/manage/scriptApproval/
+
 
 ```   
-## Issues
-
-## Contributing
-
-TODO review the default [CONTRIBUTING](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md) file and make sure it is appropriate for your plugin, if not then add your own one adapted from the base file
-
-Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
-
 ## LICENSE
 
 Licensed under MIT, see [LICENSE](LICENSE.md)
