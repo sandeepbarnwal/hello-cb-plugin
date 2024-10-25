@@ -122,7 +122,7 @@ public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
     }
 
 public static class JobRunEntry {
-    private final String jobName;
+    private String jobName;
     private final Instant timestamp;
 
     public JobRunEntry(String jobName, Instant timestamp) {
@@ -132,6 +132,10 @@ public static class JobRunEntry {
 
     public String getJobName() {
         return jobName;
+    }
+
+    public void setJobName(String jobName) {
+        this.jobName = jobName;
     }
 
     public Instant getTimestamp() {
@@ -162,6 +166,42 @@ public static class JobRunEntry {
             } catch (IOException | JsonSyntaxException e) {
                 e.printStackTrace();
                 return "";
+            }
+        }
+    }
+
+
+    public static boolean renameJobName(String oldName, String newName) {
+        synchronized (lock) {
+            File file = new File(CATEGORY_JOBS_FILE);
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                Type type = new TypeToken<Map<String,List<JobRunEntry>>>(){}.getType();
+                Map<String, List<JobRunEntry>> categoryJobsMap = gson.fromJson(reader, type);
+
+                if (categoryJobsMap == null || categoryJobsMap.isEmpty())
+                    return true;
+
+                for (List<JobRunEntry> jobRunEntries: categoryJobsMap.values()) {
+                    for(JobRunEntry jre: jobRunEntries) {
+                        String[] tokens = jre.getJobName().split(" ");
+                        //Assumption: Jenkins appends a space followed by '#' and a number to the end of each job name
+                        // for every job run.
+                        String jobNameWithoutBuildNo = Arrays.stream(tokens, 0, tokens.length - 1)
+                                .collect(Collectors.joining(""));
+                        if (jobNameWithoutBuildNo.equals(oldName)) {
+                            jre.setJobName(newName + " " + tokens[tokens.length - 1]);
+                        }
+                    }
+                }
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                    gson.toJson(categoryJobsMap, writer);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            } catch (IOException | JsonSyntaxException e) {
+                e.printStackTrace();
+                return false;
             }
         }
     }
