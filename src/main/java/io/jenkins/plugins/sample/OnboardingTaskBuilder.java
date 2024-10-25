@@ -1,5 +1,12 @@
 package io.jenkins.plugins.sample;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -19,13 +26,30 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.servlet.ServletException;
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.io.*;
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
+
+    private static final String CATEGORY_JOBS_FILE = "category_jobs.json";
+    private static final Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class, new InstantAdapter())
+            .setPrettyPrinting().create();
+    private static final Object lock = new Object();
+
+    public static class InstantAdapter extends TypeAdapter<Instant> {
+        @Override
+        public void write(JsonWriter out, Instant value) throws IOException {
+            out.value(value.toString());
+        }
+
+        @Override
+        public Instant read(JsonReader in) throws IOException {
+            return Instant.parse(in.nextString());
+        }
+    }
 
     private final String name;
     private String selectedCategory;
@@ -58,8 +82,62 @@ public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
                     .filter(category -> category.getUuid().equals(selectedCategory)).findFirst();
             listener.getLogger().println("I'm " + name + (categoryEntryOptional
                     .map(categoryEntry -> " and I have selected " + categoryEntry.getName()).orElse("")));
+            categoryEntryOptional.ifPresent(categoryEntry -> saveJobNamePerCategory(run.getFullDisplayName(), categoryEntry.getName()));
         }
     }
+
+    private void saveJobNamePerCategory(String jobName, String category) {
+        File file = new File(CATEGORY_JOBS_FILE);
+        synchronized (lock) {
+            try {
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+
+            Map<String, List<JobRunEntry>> categoryJobsMap;
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                Type type = new TypeToken<Map<String,List<JobRunEntry>>>(){}.getType();
+                categoryJobsMap = gson.fromJson(reader, type);
+                if (categoryJobsMap == null) {
+                    categoryJobsMap = new HashMap<>();
+                }
+            } catch (IOException | JsonSyntaxException e) {
+                categoryJobsMap = new HashMap<>();
+            }
+
+            categoryJobsMap.computeIfAbsent(category, k -> new ArrayList<>())
+                    .add(new JobRunEntry(jobName, Instant.now()));
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                gson.toJson(categoryJobsMap, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+public static class JobRunEntry {
+    private final String jobName;
+    private final Instant timestamp;
+
+    public JobRunEntry(String jobName, Instant timestamp) {
+        this.jobName = jobName;
+        this.timestamp = timestamp;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
+    }
+}
 
     @Symbol("onboarding")
     @Extension
@@ -81,7 +159,7 @@ public class OnboardingTaskBuilder extends Builder implements SimpleBuildStep {
                 categoryNames = onboardingSectionConfig.getCategoryConfig().getCategories().stream()
                         .map(category -> category.getName()).collect(Collectors.toList());
             }
-            return categoryNames; // Retrieve categories from global config
+            return categoryNames;
         }
 
         @Override
