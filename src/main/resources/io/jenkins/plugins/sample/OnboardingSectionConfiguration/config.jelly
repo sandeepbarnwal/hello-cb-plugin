@@ -7,6 +7,9 @@
     <f:entry title="Description" field="description">
         <f:textarea />
     </f:entry>
+    <f:entry title="Last Job Run" field="lastJobRun">
+        <f:textbox readonly="true" /> <!-- Intellij indicates error on adding readonly -->
+    </f:entry>
     <f:advanced title="Connection Options">
         <f:entry title="URL">
             <f:textbox field="url" />
@@ -28,5 +31,6 @@
                 method="testPayload" with="username,password,url,secretId" />
     </f:advanced>
     <f:property field="categoryConfig"/>
+
 </f:section>
 </j:jelly>

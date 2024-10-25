@@ -139,6 +139,33 @@ public static class JobRunEntry {
     }
 }
 
+    //TODO: This approach could be slow if there too many jobs. Another way could be to maintain the last job run
+    // separate in the same json file.
+    public static String getLastJobRun() {
+        synchronized (lock) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(CATEGORY_JOBS_FILE))) {
+                Type type = new TypeToken<Map<String,List<JobRunEntry>>>(){}.getType();
+                Map<String, List<JobRunEntry>> categoryJobsMap = gson.fromJson(reader, type);
+
+                if (categoryJobsMap == null || categoryJobsMap.isEmpty())
+                    return "";
+
+                JobRunEntry lastJobRun = null;
+                for (List<JobRunEntry> jobRunEntries: categoryJobsMap.values()) {
+                    for(JobRunEntry jre: jobRunEntries) {
+                        if (lastJobRun == null || lastJobRun.timestamp.isBefore(jre.timestamp)) {
+                            lastJobRun = jre;
+                        }
+                    }
+                }
+                return lastJobRun == null ? "" : lastJobRun.getJobName();
+            } catch (IOException | JsonSyntaxException e) {
+                e.printStackTrace();
+                return "";
+            }
+        }
+    }
+
     @Symbol("onboarding")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {

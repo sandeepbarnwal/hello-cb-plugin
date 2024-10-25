@@ -237,5 +237,9 @@ public class OnboardingSectionConfiguration extends GlobalConfiguration {
             credentials.forEach(c -> result.add(c.getId(), c.getId()));
         return result;
     }
+
+    public String getLastJobRun() {
+        return OnboardingTaskBuilder.getLastJobRun();
+    }
 }
 
